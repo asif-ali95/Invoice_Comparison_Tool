@@ -302,7 +302,7 @@ with st.sidebar:
             st.error(f"❌ Could not read Excel file/sheets: {e}")
 
     st.markdown("---")
-    st.caption("Developed with Streamlit.")
+    st.caption("Developed by Webtel.")
 # --- END OF SIDEBAR ---
 
 # === MAIN CONTENT START ===
@@ -665,4 +665,5 @@ if st.session_state['processed']:
 # === Upload Prompt ===
 else:
     if not uploaded_file:
+
           st.info("⬆️ Please upload an Excel file and click 'START INVOICE COMPARISON' in the sidebar to begin processing.")
