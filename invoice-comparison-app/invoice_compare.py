@@ -583,9 +583,10 @@ if st.session_state['processed']:
             st.download_button(label="Download All Data (3 Sheets in one .xlsx) 📦", data=complete_data, file_name="Invoice_Comparison_Report_Full.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="primary")
 
 # --- Upload Prompt (Final Corrected Block - Uses the new CSS classes) ---
+# --- Upload Prompt (Final Corrected Block with Image) ---
 else:
     if not uploaded_file:
-        # Use st.markdown with a container DIV for centering and the 'bounce-image' class
+        # This HTML uses the CSS classes defined in the global block above.
         image_html = """
         <div class="bounce-image-container">
             <img src="https://www.aoneoutsourcing.uk/Service-image/2756956111743680677.png" 
