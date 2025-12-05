@@ -3,6 +3,9 @@ import streamlit as st
 import io
 import re
 import altair as alt
+import streamlit.components.v1 as components
+import base64
+import requests
 
 # --- GLOBAL CSS FOR IMAGE CENTERING AND BOUNCING ---
 # This block is outside the function to ensure the styles are applied globally and early,
@@ -446,7 +449,7 @@ if st.session_state['processed']:
             col_down_filt, col_clear = st.columns([3, 1])
             with col_down_filt:
                 excel_data = to_excel(filtered_df, sheet_name=title.replace(" ", "_").replace("(", "").replace(")", ""))
-                st.download_button(label=f"📥 Download {title}", data=excel_data, file_name="Filtered_Data.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="primary")
+                st.download_button(label=f"📥 Download {title}", data=excel_data, file_name="Filtered_Data.xlsx", mime="application/vnd.openxmlformats-officedocument-spreadsheetml.sheet", use_container_width=True)
             with col_clear:
                 if st.button("❌ Clear Filter", key='clear_filter_btn', use_container_width=True, type="secondary"):
                     st.session_state['current_filter'] = None
@@ -507,7 +510,7 @@ if st.session_state['processed']:
             st.markdown("### 📋 Combined List of Internal Duplicates")
             st.data_editor(duplicates_within_sheets, key='internal_duplicates_table_combined', use_container_width=True, hide_index=True)
             duplicates_excel_data = to_excel(duplicates_within_sheets, sheet_name='Internal_Duplicates_List')
-            st.download_button(label="📥 Download List (.xlsx)", data=duplicates_excel_data, file_name="Internal_Duplicates.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+            st.download_button(label="📥 Download List (.xlsx)", data=duplicates_excel_data, file_name="Internal_Duplicates.xlsx", mime="application/vnd.openxmlformats-officedocument-spreadsheetml.sheet", use_container_width=True)
             st.markdown("---")
             st.markdown("### 📄 Duplicates Broken Down by Sheet")
             sheets_with_duplicates = duplicates_within_sheets['Sheet'].unique()
@@ -520,7 +523,7 @@ if st.session_state['processed']:
                 st.markdown(f"#### Duplicates in **{sheet_name}** ({len(sheet_duplicates_df)} Invoices)")
                 st.data_editor(sheet_duplicates_df, key=f'internal_duplicates_table_{sheet_name}_separate', use_container_width=True, hide_index=True)
                 sheet_excel_data = to_excel(sheet_duplicates_df, sheet_name=f"{sheet_name}_Duplicates")
-                st.download_button(label=f"📥 Download Duplicates in {sheet_name}", data=sheet_excel_data, file_name=f"Internal_Duplicates_{sheet_name}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key=f"download_duplicates_{sheet_name}", use_container_width=True)
+                st.download_button(label=f"📥 Download Duplicates in {sheet_name}", data=sheet_excel_data, file_name=f"Internal_Duplicates_{sheet_name}.xlsx", mime="application/vnd.openxmlformats-officedocument-spreadsheetml.sheet", use_container_width=True)
                 st.markdown("---")
         else:
             st.info("No internal duplicates found.")
@@ -545,7 +548,7 @@ if st.session_state['processed']:
                     st.subheader("💰 Invoices with Amount Difference (Focused)")
                     st.data_editor(final_diff_table, key='amount_difference_table_specific', use_container_width=True, hide_index=True)
                     diff_excel_data = to_excel(final_diff_table, sheet_name='Amount_Differences')
-                    st.download_button(label="📥 Download Table (.xlsx)", data=diff_excel_data, file_name="Amount_Differences.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True)
+                    st.download_button(label="📥 Download Table (.xlsx)", data=diff_excel_data, file_name="Amount_Differences.xlsx", mime="application/vnd.openxmlformats-officedocument-spreadsheetml.sheet", use_container_width=True)
                 else:
                     st.subheader("💰 Invoices with Amount Difference (Focused)")
                     st.info("🎉 Perfect Match! No invoices found with a non-zero difference in the primary amount column.")
@@ -563,7 +566,7 @@ if st.session_state['processed']:
             st.info(f"Showing all **{len(final_summary)}** unique invoices.")
             st.dataframe(filtered_summary, key='full_summary_table_raw_fast', use_container_width=True, hide_index=True)
             unfiltered_data_summary = to_excel(filtered_summary.style.apply(color_summary_table, axis=1), sheet_name='Summary_Styled')
-            st.download_button(label="Download Summary Data Only (Styled Excel) 📥", data=unfiltered_data_summary, file_name="Invoice_Summary_Table_Styled.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="secondary")
+            st.download_button(label="Download Summary Data Only (Styled Excel) 📥", data=unfiltered_data_summary, file_name="Invoice_Summary_Table_Styled.xlsx", mime="application/vnd.openxmlformats-officedocument-spreadsheetml.sheet", use_container_width=True)
         else:
             st.warning("⚠️ No unique invoice data found.")
 
@@ -572,7 +575,7 @@ if st.session_state['processed']:
         col_down1, col_down2 = st.columns(2)
         with col_down1:
             unfiltered_data = to_excel(final_summary, sheet_name='Summary')
-            st.download_button(label="Download Summary Data Only (Raw Excel) 📋", data=unfiltered_data, file_name="Invoice_Summary_Table_Raw.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="secondary")
+            st.download_button(label="Download Summary Data Only (Raw Excel) 📋", data=unfiltered_data, file_name="Invoice_Summary_Table_Raw.xlsx", mime="application/vnd.openxmlformats-officedocument-spreadsheetml.sheet", use_container_width=True)
         with col_down2:
             output = io.BytesIO()
             writer = pd.ExcelWriter(output, engine='openpyxl')
@@ -582,19 +585,57 @@ if st.session_state['processed']:
             combined.to_excel(writer, sheet_name='Combined_Data', index=False)
             writer.close()
             complete_data = output.getvalue()
-            st.download_button(label="Download All Data (3 Sheets in one .xlsx) 📦", data=complete_data, file_name="Invoice_Comparison_Report_Full.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="primary")
+            st.download_button(label="Download All Data (3 Sheets in one .xlsx) 📦", data=complete_data, file_name="Invoice_Comparison_Report_Full.xlsx", mime="application/vnd.openxmlformats-officedocument-spreadsheetml.sheet", use_container_width=True)
 
 # --- Upload Prompt (Final Corrected Block) ---
 else:
     if not uploaded_file:
-        # Use st.markdown with a container DIV for centering and the 'bounce-image' class
-        image_html = """
+        # Render the image + its CSS via an isolated HTML component for reliable rendering/animation.
+        # Strategy:
+        # 1) Try to fetch the remote image and create a data URI (base64) as a fallback.
+        # 2) Embed CSS + <img src="external"> with an onerror handler that swaps to the data URI if the external image is blocked.
+        # This handles CSP, hotlink blocking, and other environments where external assets are blocked.
+        image_url = "https://www.aoneoutsourcing.uk/Service-image/2756956111743680677.png"
+        data_uri = ""
+        try:
+            resp = requests.get(image_url, timeout=5)
+            if resp.ok and resp.content:
+                content_type = resp.headers.get("Content-Type", "image/png")
+                b64 = base64.b64encode(resp.content).decode("utf-8")
+                data_uri = f"data:{content_type};base64,{b64}"
+        except Exception:
+            # If fetching fails we leave data_uri empty and still attempt to render the external URL.
+            data_uri = ""
+
+        # Build an onerror attribute only if we have a data URI fallback
+        onerror_attr = f'onerror="this.onerror=null;this.src=\'{data_uri}\';"' if data_uri else ""
+
+        image_html = f"""
+        <style>
+        @keyframes bounce {{
+          0%, 20%, 50%, 80%, 100% {{ transform: translateY(0); }}
+          40% {{ transform: translateY(-30px); }}
+          60% {{ transform: translateY(-15px); }}
+        }}
+        .bounce-image-container {{
+            text-align: center;
+            margin: 20px auto;
+        }}
+        .bounce-image {{
+            animation: bounce 2s infinite;
+            display: inline-block;
+            max-width: 300px;
+            height: auto;
+            transform-origin: bottom;
+        }}
+        </style>
         <div class="bounce-image-container">
-            <img src="https://www.aoneoutsourcing.uk/Service-image/2756956111743680677.png" 
-                 alt="Vat Reconciliation Outsourcing Services" 
-                 class="bounce-image">
+            <img src="{image_url}" alt="Vat Reconciliation Outsourcing Services" class="bounce-image" {onerror_attr} />
         </div>
         """
-        st.markdown(image_html, unsafe_allow_html=True)
-        
+
+        # components.html embeds the markup "as is" and is more reliable for CSS animations than st.markdown in some Streamlit versions.
+        # If the external image or CSS is blocked, the onerror handler will swap to the embedded data URI (when available).
+        components.html(image_html, height=360)
+
         st.info("⬆️ Please upload an Excel file and click 'START INVOICE COMPARISON' in the sidebar to begin processing.")
