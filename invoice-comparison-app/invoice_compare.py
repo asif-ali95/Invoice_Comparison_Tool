@@ -5,8 +5,9 @@ import re
 import altair as alt
 
 
-# --- GLOBAL CSS FOR IMAGE CENTERING AND BOUNCING (NEW ADDITION) ---
-# This block ensures the animation styles are loaded globally and early.
+# --- GLOBAL CSS FOR IMAGE CENTERING AND BOUNCING (MISSING BLOCK - ADD THIS HERE) ---
+# This block is outside the function to ensure the styles are applied globally and early,
+# which fixes deployment issues (e.g., on Streamlit Cloud) where the animation fails to load.
 st.markdown("""
 <style>
 /* 1. Bounce Animation Definition */
@@ -38,12 +39,13 @@ st.markdown("""
 }
 </style>
 """, unsafe_allow_html=True)
-# ----------------------------------------------------
+# -----------------------------------------------------------------------------------
 
 
 # --- 1. CUSTOM CSS FOR MODERN "PILL" TABS ---
 def custom_tabs_style():
     """Applies a modern, segmented 'pill' style to the tabs."""
+    # Note: The bounce CSS was moved to the global block above.
     st.markdown("""
         <style>
         /* 1. Style the Tab Container (The gray bar holding the tabs) */
@@ -580,7 +582,7 @@ if st.session_state['processed']:
             complete_data = output.getvalue()
             st.download_button(label="Download All Data (3 Sheets in one .xlsx) 📦", data=complete_data, file_name="Invoice_Comparison_Report_Full.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, type="primary")
 
-# --- Upload Prompt (Final Corrected Block with Image) ---
+# --- Upload Prompt (Final Corrected Block - Uses the new CSS classes) ---
 else:
     if not uploaded_file:
         # Use st.markdown with a container DIV for centering and the 'bounce-image' class
